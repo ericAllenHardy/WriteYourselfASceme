@@ -15,17 +15,21 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Parser
+  exposed-modules:     SchemeInterpreter.Eval
+                     , SchemeInterpreter.LispVal
+                     , SchemeInterpreter.Parser
   build-depends:       base >= 4.7 && < 5
                      , parsec >= 3.1
                      , vector >= 0.11
+                     , mtl >= 2.2.2
+                     , containers >= 0.6.0.1
   default-language:    Haskell2010
 
 executable scheme-interpreter-exe
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  build-depends:       base
+  build-depends:       base, mtl
                      , scheme-interpreter
   default-language:    Haskell2010
 
