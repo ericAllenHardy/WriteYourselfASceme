@@ -39,7 +39,9 @@ packages:
   - "."
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
-extra-deps: []
+extra-deps: [
+  'freer-0.2.4.1@sha256:f8650d4787f0909b7887188f0f1ff84ead5f5932d4c3a2d3e49120b7d95b3c5d,3221'
+]
 
 # Override default flag values for local packages and extra-deps
 flags: {}

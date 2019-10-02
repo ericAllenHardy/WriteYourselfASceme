@@ -19,12 +19,14 @@ library
                      , SchemeInterpreter.LispVal
                      , SchemeInterpreter.Parser
                      , SchemeInterpreter.StdLib
+                     , SchemeInterpreter.Env
   build-depends:       base >= 4.7 && < 5
                      , parsec >= 3.1
                      , vector >= 0.11
                      , mtl >= 2.2.2
                      , containers >= 0.6.0.1
                      , transformers >= 0.5.6.2
+                     , freer >= 0.2.4.1
   default-language:    Haskell2010
 
 executable scheme-interpreter-exe
@@ -35,6 +37,8 @@ executable scheme-interpreter-exe
   build-depends:       base, mtl
                      , scheme-interpreter
                      , from-sum >= 0.2.1.0
+                     , containers >= 0.6.0.1
+                     , transformers >= 0.5.6.2
   default-language:    Haskell2010
 
 test-suite scheme-interpreter-test
