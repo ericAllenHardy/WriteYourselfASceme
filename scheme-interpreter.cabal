@@ -19,7 +19,7 @@ library
                      , SchemeInterpreter.LispVal
                      , SchemeInterpreter.Parser
                      , SchemeInterpreter.StdLib
-                     , SchemeInterpreter.Env
+                     , SchemeInterpreter.Runtime
   build-depends:       base >= 4.7 && < 5
                      , parsec >= 3.1
                      , vector >= 0.11

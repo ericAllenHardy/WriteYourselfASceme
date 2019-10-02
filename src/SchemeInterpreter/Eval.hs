@@ -8,12 +8,11 @@ import           Control.Monad.Freer (Member, Eff)
 import qualified Data.Map.Strict as M
 import           SchemeInterpreter.LispVal (LispError(..), LispVal(..)
                                           , FuncApplication(..))
-import           SchemeInterpreter.Env (Env, getVariable, getFunction
-                                      , currentEnv, throwError)
+import           SchemeInterpreter.Runtime (Runtime, getVariable, getFunction
+                                          , currentRuntime, throwError)
 
-eval :: Member Env r => LispVal -> Eff r LispVal
+eval :: Member Runtime r => LispVal -> Eff r LispVal
 eval val @ (String _) = return val
-eval val @ (Number _) = return val
 eval val @ (Bool _) = return val
 eval (List [Atom "quote", val]) = return val
 eval (List [Atom "if", pred, conseq, alt]) = do
@@ -27,7 +26,7 @@ eval (List (Atom func:args)) = do
   apply func reducedArgs
 eval badForm = throwError (BadSpecialForm "Unrecognized special form" badForm)
 
-apply :: Member Env r => String -> [LispVal] -> Eff r LispVal
+apply :: Member Runtime r => String -> [LispVal] -> Eff r LispVal
 apply name args = maybe
   (throwError $ NotFunction "Unrecognized primitive function args" name)
   (\f -> case f args of

@@ -4,7 +4,7 @@
 module SchemeInterpreter.Parser (LispVal(..), LispParser, parseExpr, readExpr) where
 
 import           Control.Monad.Freer (Member, Eff)
-import           SchemeInterpreter.Env (Env, throwError)
+import           SchemeInterpreter.Runtime (Runtime, throwError)
 import           SchemeInterpreter.LispVal
 import           Control.Monad (guard)
 import           Data.Char
@@ -19,7 +19,7 @@ import qualified Data.Vector as V
 
 type LispParser = Parser LispVal
 
-readExpr :: Member Env r => String -> Eff r LispVal
+readExpr :: Member Runtime r => String -> Eff r LispVal
 readExpr input = case parse parseExpr "lisp" input of
   Left err  -> throwError (ParserError err)
   Right val -> return val

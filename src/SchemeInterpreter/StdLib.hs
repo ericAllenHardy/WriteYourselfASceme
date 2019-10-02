@@ -1,4 +1,4 @@
-module SchemeInterpreter.StdLib (functionEnv, FuncApplication(..)) where
+module SchemeInterpreter.StdLib (stdLibFunctions, FuncApplication(..)) where
 
 import           Data.List (foldl')
 import qualified Data.Map.Strict as M
@@ -6,8 +6,8 @@ import           Text.Read (readMaybe)
 import           SchemeInterpreter.LispVal (LispError(..), LispVal(..)
                                           , FuncApplication(..))
 
-functionEnv :: M.Map String ([LispVal] -> FuncApplication LispVal)
-functionEnv = M.fromList
+stdLibFunctions :: M.Map String ([LispVal] -> FuncApplication LispVal)
+stdLibFunctions = M.fromList
   [ ("+", numericBinop (+))
   , ("-", numericBinop (-))
   , ("*", numericBinop (*))
