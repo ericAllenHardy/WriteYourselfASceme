@@ -65,3 +65,8 @@ extra-package-dbs: []
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
+
+rebuild-ghc-options: true
+ghc-options:
+  "$locals": -Wall -Werror -Wno-unused-do-bind -Wno-unrecognised-pragmas
+  "$targets": -Wall -Wno-unused-do-bind -Wno-unrecognised-pragmas

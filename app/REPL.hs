@@ -2,27 +2,25 @@ module REPL (runRepl) where
 
 import           Control.Monad ((>=>))
 import           Control.Monad.Trans.State.Strict (evalStateT)
-import           SchemeInterpreter.Runtime (runRuntime, NameLookup(..)
-                                          , NameValue(..), stdLib)
+import qualified SchemeInterpreter.Runtime as R
 import           SchemeInterpreter.Eval (eval)
 import           SchemeInterpreter.Parser (readExpr)
 import           System.IO (hFlush, stdout)
-import           Control.FromSum (fromEither)
-import qualified Data.Map.Strict as M
 
+-- import           Control.Monad.Freer (Member, Eff)
 evalString :: String -> IO String
 evalString expr =
-  let result = evalStateT (runRuntime $ eval =<< readExpr expr) stdLib
+  let result = evalStateT (R.runRuntime $ eval =<< readExpr expr) R.stdLib
   in return (extractValue result)
   where
     extractValue = either show show
 
-until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
-until_ pred prompt action = do
+until_ :: (a -> Bool) -> IO a -> (a -> IO ()) -> IO ()
+until_ predicate prompt action = do
   result <- prompt
-  if pred result
+  if predicate result
     then return ()
-    else action result >> until_ pred prompt action
+    else action result >> until_ predicate prompt action
 
 runRepl :: IO ()
 runRepl = do

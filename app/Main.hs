@@ -1,19 +1,12 @@
 module Main where
 
-import           Data.Maybe (listToMaybe)
 import           REPL (runRepl)
-import           SchemeInterpreter.Eval (eval)
-import           SchemeInterpreter.Runtime (runRuntime, NameLookup(..)
-                                          , NameValue(..), stdLib)
-import           SchemeInterpreter.Parser (readExpr)
+import           SchemeInterpreter.Interpreter (evalLispFile)
 import           System.Environment (getArgs)
 import           Control.Monad ((>=>))
-import           Control.Monad.Trans.State.Strict (evalStateT)
 
 main :: IO ()
-main = do
-  args <- getArgs
-  runSubCommand args
+main = getArgs >>= runSubCommand
 
 runSubCommand :: [String] -> IO ()
 runSubCommand ["repl"] = runRepl
@@ -23,8 +16,4 @@ runSubCommand _ = print helpStr
     helpStr = "Options: repl, file {filepath}"
 
 evalFile :: String -> IO ()
-evalFile = readFile >=> print . evalString
-
-evalString :: String -> String
-evalString s = either show show
-  $ evalStateT (runRuntime $ eval =<< readExpr s) stdLib
+evalFile = readFile >=> print . evalLispFile

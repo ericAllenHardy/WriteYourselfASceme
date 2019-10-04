@@ -1,26 +1,27 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MonoLocalBinds #-}
-
-module SchemeInterpreter.Parser (LispVal(..), LispParser, parseExpr, readExpr) where
+module SchemeInterpreter.Parser (LispParser, parseExpr, readExpr, readLispFile) where
 
 import           Control.Monad.Freer (Member, Eff)
 import           SchemeInterpreter.Runtime (Runtime, throwError)
 import           SchemeInterpreter.LispVal
-import           Control.Monad (guard)
 import           Data.Char
-import           Numeric
 import           Text.ParserCombinators.Parsec (Parser, alphaNum, anyChar, char
                                               , digit, endBy, letter, many
                                               , many1, noneOf, oneOf
-                                              , optionMaybe, parse, sepBy
+                                              , optionMaybe, parse, sepBy, sepEndBy1
                                               , skipMany1, space, string, try
-                                              , (<|>))
+                                              , (<|>), newline)
 import qualified Data.Vector as V
 
 type LispParser = Parser LispVal
 
 readExpr :: Member Runtime r => String -> Eff r LispVal
-readExpr input = case parse parseExpr "lisp" input of
+readExpr = readParser parseExpr
+
+readLispFile :: Member Runtime r => String -> Eff r [LispVal]
+readLispFile = readParser (parseExpr `sepEndBy1` newline)
+
+readParser :: Member Runtime r => Parser a -> String -> Eff r a
+readParser p input = case parse p "lisp" input of
   Left err  -> throwError (ParserError err)
   Right val -> return val
 
@@ -67,6 +68,7 @@ parseChar = do
   where
     cLookup "space" = ' '
     cLookup "newline" = '\n'
+    cLookup _ = error "huh? how'd you get here"
 
 parseAtom :: LispParser
 parseAtom = do
@@ -82,6 +84,7 @@ parseBool = do
     $ case b of
       't' -> True
       'f' -> False
+      _   -> error "huh? how'd you get here"
 
 parseNumber :: LispParser
 parseNumber = parseDec1
@@ -115,6 +118,7 @@ parseNumber = parseDec1
       + case c of
         '1' -> 1
         '0' -> 0
+        _   -> error "huh? how'd you get here"
 
     readOct acc c = 8 * acc + toInteger (digitToInt c)
 
@@ -128,6 +132,7 @@ parseNumber = parseDec1
           'd' -> 13
           'e' -> 14
           'f' -> 15
+          _   -> error "huh? how'd you get here"
 
 parseFloat :: LispParser
 parseFloat = parseDecimal <|> parseExponent
@@ -137,27 +142,27 @@ parseFloat = parseDecimal <|> parseExponent
       x <- many1 digit
       char '.'
       y <- many1 digit
-      let abs = read $ x ++ "." ++ y
+      let absVal = read $ x ++ "." ++ y
       let f = case neg of
             Just _  -> negate
             Nothing -> id
-      return $ Float (f abs)
+      return $ Float (f absVal)
 
     parseExponent = do
       Float x <- parseDecimal
       char 'e'
       y <- many1 digit
-      return (Float $ x * 10 ^ read y)
+      return (Float $ x * 10 ^ (read y :: Integer))
 
 parseList :: LispParser
-parseList = List <$> sepBy parseExpr spaces
+parseList = List <$> parseExpr `sepBy` spaces
 
 parseDottedList :: LispParser
 parseDottedList = do
-  head <- endBy parseExpr spaces
+  listHead <- endBy parseExpr spaces
   char '.'
   spaces
-  DottedList head <$> parseExpr
+  DottedList listHead <$> parseExpr
 
 parseQuoted :: LispParser
 parseQuoted = do
@@ -168,7 +173,7 @@ parseQuoted = do
 parseQuasiquote :: LispParser
 parseQuasiquote = do
   string "`("
-  xs <- sepBy (try parseQuoteSplice <|> parseUnquote <|> parseExpr) spaces
+  xs <- (try parseQuoteSplice <|> parseUnquote <|> parseExpr) `sepBy ` spaces
   char ')'
   return (List [Atom "quasiquote", List xs])
   where

@@ -1,14 +1,11 @@
-{-# LANGUAGE DeriveFunctor #-}
-
 module SchemeInterpreter.LispVal
     ( LispVal(..)
     , LispError(..)
-    , FuncApplication(..)) where
+    , FuncApplication(..)
+    , LispFunction) where
 
-import           Control.Monad.Except
 import qualified Data.Vector as V
 import           Text.ParserCombinators.Parsec (ParseError)
-import           Control.Monad.Freer (Member, Eff)
 
 data LispVal = Atom String
              | Char Char
@@ -21,11 +18,14 @@ data LispVal = Atom String
              | Vector (V.Vector LispVal)
   deriving (Eq)
 
+type LispFunction = [LispVal] -> FuncApplication LispVal
+
 instance Show LispVal where
   show (Atom atom) = atom
-  show (Char c) = show c
+  show (Char c) = "#\\" ++ [c]
   show (List ls) = "(" ++ showLs ls ++ ")"
-  show (DottedList head tail) = "(" ++ showLs head ++ " . " ++ show tail ++ ")"
+  show (DottedList listHead listTail) =
+    "(" ++ showLs listHead ++ " . " ++ show listTail ++ ")"
   show (Number n) = show n
   show (Float x) = show x
   show (String s) = show s
@@ -33,18 +33,17 @@ instance Show LispVal where
   show (Bool False) = "#f"
   show (Vector ls) = "#(" ++ showLs (V.toList ls) ++ ")"
 
+showLs :: [LispVal] -> String
 showLs = unwords . map show
 
-data LispError =
-    NumArgs Integer [LispVal]
-  | NumArgsRange Integer Integer [LispVal]
-  | ValueError String LispVal
-  | TypeMismatch String LispVal
-  | ParserError ParseError
-  | BadSpecialForm String LispVal
-  | NotFunction String String
-  | UnboundVar String String
-  | Default String
+data LispError = NumArgs Integer [LispVal]
+               | NumArgsRange Integer Integer [LispVal]
+               | ValueError String LispVal
+               | TypeMismatch String LispVal
+               | ParserError ParseError
+               | BadSpecialForm String LispVal
+               | NotFunction String String
+               | UnboundVar String String
   deriving (Eq)
 
 instance Show LispError where
@@ -54,10 +53,10 @@ instance Show LispError where
   show (ValueError msg found) = msg ++ ": " ++ show found
   show (NumArgs expected found) =
     "Expected " ++ show expected ++ " args; found values " ++ showLs found
-  show (NumArgsRange min max found) = "Expected between "
-    ++ show min
+  show (NumArgsRange minCount maxCount found) = "Expected between "
+    ++ show minCount
     ++ " and "
-    ++ show max
+    ++ show maxCount
     ++ " args; found values "
     ++ showLs found
   show (TypeMismatch expected found) =

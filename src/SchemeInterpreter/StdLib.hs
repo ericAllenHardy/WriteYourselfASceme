@@ -1,6 +1,5 @@
 module SchemeInterpreter.StdLib (stdLibFunctions, FuncApplication(..)) where
 
-import           Data.List (foldl')
 import qualified Data.Map.Strict as M
 import           Text.Read (readMaybe)
 import           SchemeInterpreter.LispVal (LispError(..), LispVal(..)
@@ -82,13 +81,13 @@ unpackStr (String s) = FAValue s
 unpackStr x = FAError (TypeMismatch "string" x)
 
 car :: [LispVal] -> FuncApplication LispVal
-car [List (x:xs)] = FAValue x
-car [DottedList (x:xs) _] = FAValue x
+car [List (x:_)] = FAValue x
+car [DottedList (x:_) _] = FAValue x
 car [badArg] = FAError $ TypeMismatch "pair" badArg
 car badArgList = FAError $ NumArgs 1 badArgList
 
 cdr :: [LispVal] -> FuncApplication LispVal
-cdr [List (x:xs)] = FAValue $ List xs
+cdr [List (_:xs)] = FAValue $ List xs
 cdr [DottedList [_] x] = FAValue x
 cdr [DottedList (_:xs) x] = FAValue $ DottedList xs x
 cdr [badArg] = FAError $ TypeMismatch "pair" badArg
@@ -125,11 +124,12 @@ isString :: LispVal -> Bool
 isString (String _) = True
 isString _ = False
 
+{-
 makeString :: [LispVal] -> FuncApplication LispVal
 makeString [Number k] = FAValue (String $ replicate (fromIntegral k) 'a')
 makeString [x] = FAError (TypeMismatch "integer" x)
 makeString [Number k, Char c] = FAValue (String $ replicate (fromIntegral k) c)
-makeString [x, Char c] = FAError (TypeMismatch "integer" x)
+makeString [x, Char _] = FAError (TypeMismatch "integer" x)
 makeString [_, x] = FAError (TypeMismatch "char" x)
 makeString args = FAError (NumArgsRange 1 2 args)
 
@@ -140,7 +140,7 @@ stringConcat
     go (Right ls) (Char c) = Right (c:ls)
     go l @ (Left _) _ = l
     go _ x = Left (TypeMismatch "char" x)
-
+-}
 stringLength :: [LispVal] -> FuncApplication LispVal
 stringLength [String s] = FAValue (Number . fromIntegral $ length s)
 stringLength [arg] = FAError (TypeMismatch "string" arg)
@@ -151,4 +151,6 @@ stringRef [String s, i @ (Number n)] =
   if 0 <= n && n <= fromIntegral (length s)
   then FAValue (Char $ s !! fromIntegral n)
   else FAError (ValueError "invalid string index" i)
-
+stringRef [String _, x] = FAError (TypeMismatch "integer" x)
+stringRef [x, _] = FAError (TypeMismatch "string" x)
+stringRef args = FAError (NumArgs 2 args)
