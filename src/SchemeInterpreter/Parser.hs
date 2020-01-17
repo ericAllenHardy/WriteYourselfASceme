@@ -1,7 +1,7 @@
 module SchemeInterpreter.Parser (LispParser, parseExpr, readExpr, readLispFile) where
 
 import           Control.Monad.Freer (Member, Eff)
-import           SchemeInterpreter.Runtime (Runtime, throwError)
+import           SchemeInterpreter.LispComp (LispComp, throwError)
 import           SchemeInterpreter.LispVal
 import           Data.Char
 import           Text.ParserCombinators.Parsec (Parser, alphaNum, anyChar, char
@@ -14,13 +14,13 @@ import qualified Data.Vector as V
 
 type LispParser = Parser LispVal
 
-readExpr :: Member Runtime r => String -> Eff r LispVal
+readExpr :: Member LispComp r => String -> Eff r LispVal
 readExpr = readParser parseExpr
 
-readLispFile :: Member Runtime r => String -> Eff r [LispVal]
+readLispFile :: Member LispComp r => String -> Eff r [LispVal]
 readLispFile = readParser (parseExpr `sepEndBy1` newline)
 
-readParser :: Member Runtime r => Parser a -> String -> Eff r a
+readParser :: Member LispComp r => Parser a -> String -> Eff r a
 readParser p input = case parse p "lisp" input of
   Left err  -> throwError (ParserError err)
   Right val -> return val

@@ -1,19 +1,15 @@
 module Main where
 
-import           REPL (runRepl)
-import           SchemeInterpreter.Interpreter (evalLispFile)
-import           System.Environment (getArgs)
-import           Control.Monad ((>=>))
+import           SchemeInterpreter.REPL         ( repl )
+import           SchemeInterpreter.EvalFile     ( evalFile )
+import           System.Environment             ( getArgs )
+
 
 main :: IO ()
 main = getArgs >>= runSubCommand
 
 runSubCommand :: [String] -> IO ()
-runSubCommand ["repl"] = runRepl
+runSubCommand ["repl"]       = repl
 runSubCommand ["file", file] = evalFile file
-runSubCommand _ = print helpStr
-  where
-    helpStr = "Options: repl, file {filepath}"
-
-evalFile :: String -> IO ()
-evalFile = readFile >=> print . evalLispFile
+runSubCommand _              = print helpStr
+  where helpStr = "Options: repl, file {filepath}"

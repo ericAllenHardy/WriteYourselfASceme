@@ -1,28 +1,31 @@
-module SchemeInterpreter.Interpreter (evalString, evalLispFile) where
+{-# LANGUAGE GADTs #-}
 
-import           Control.Monad ((<=<))
-import           Control.Monad.Trans.State.Strict (evalStateT)
-import           SchemeInterpreter.Eval (eval)
-import           SchemeInterpreter.Parser (readExpr, readLispFile)
-import           SchemeInterpreter.Runtime (Runtime, runRuntime, stdLib, Interpreter)
-import           SchemeInterpreter.LispVal (LispVal(..))
-import           Control.Monad.Freer (Member, Eff)
+module SchemeInterpreter.Interpreter (Interpreter, interpret, interpretRuntime) where
 
-evalString :: String -> String
-evalString = runInterpreter . runRuntime . (eval <=< readExpr)
+import           Control.Monad.State (MonadState, get, modify)
+import           Control.Monad.Except (throwError, MonadError)
+import           Control.Monad.Freer.Internal (extract, Eff(..), qApp)
+import           Control.Monad.Trans.State.Strict (StateT, runStateT)
+import           SchemeInterpreter.LispVal
+import           SchemeInterpreter.LispComp (LispComp(..))
+import           SchemeInterpreter.Runtime.Env (RuntimeEnv, getFunction, getVariable, addVariable)
 
-evalLispFile :: String -> String
-evalLispFile = runInterpreter . runRuntime . (loadExprs <=< readLispFile)
+
+newtype Interpreter a = Interpreter {runInterpreter :: StateT RuntimeEnv (Either LispError) a}
+  deriving (Monad, Applicative, Functor, MonadState RuntimeEnv
+          , MonadError LispError)
+
+interpret ::  RuntimeEnv -> Eff '[LispComp] LispVal -> Either LispError (LispVal, RuntimeEnv)
+interpret env = (`runStateT` env) . runInterpreter . interpretRuntime
+
+interpretRuntime :: Eff '[LispComp] a -> Interpreter a
+interpretRuntime (Val x) = return x
+interpretRuntime (E x next) = case extract x of
+  GetVariable name        -> get >>= \env -> continueWith (getVariable env name)
+  GetFunction name        -> get >>= \env -> continueWith (getFunction env name)
+  CurrentRuntime          -> get >>= continueWith
+  SetVariable name val    -> modify (addVariable name val) >> continueWith ()
+  DefineVariable name val -> modify (addVariable name val) >> continueWith ()
+  ThrowError err          -> throwError err
   where
-    loadExprs :: Member Runtime r => [LispVal] -> Eff r LispVal
-    loadExprs = \case
-                  [] -> return (List [])
-                  (expr:exprs) -> evalMany expr exprs 
-    evalMany :: Member Runtime r => LispVal -> [LispVal] -> Eff r LispVal
-    evalMany firstExpr =
-      foldl (\runtime expr -> runtime >> eval expr) (eval firstExpr)
-
-runInterpreter :: Interpreter LispVal -> String
-runInterpreter interpreter = either showErr show (evalStateT interpreter stdLib)
-  where showErr err = "Runtime Error:: " ++ show err
-
+    continueWith = interpretRuntime . qApp next

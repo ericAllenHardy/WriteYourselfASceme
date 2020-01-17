@@ -15,12 +15,15 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     SchemeInterpreter.Eval
-                     , SchemeInterpreter.LispVal
+  exposed-modules:     SchemeInterpreter.LispVal
                      , SchemeInterpreter.Parser
+                     , SchemeInterpreter.Reduce
                      , SchemeInterpreter.StdLib
-                     , SchemeInterpreter.Runtime
+                     , SchemeInterpreter.LispComp
+                     , SchemeInterpreter.Runtime.Env
                      , SchemeInterpreter.Interpreter
+                     , SchemeInterpreter.REPL
+                     , SchemeInterpreter.EvalFile
   build-depends:       base >= 4.7 && < 5
                      , parsec >= 3.1.14.0
                      , vector >= 0.11
@@ -30,26 +33,23 @@ library
                      , freer >= 0.2.4.1
   ghc-options:         -Wall -Wno-unused-do-bind                
   default-language:    Haskell2010
-  extensions:          FlexibleContexts
+  default-extensions:          FlexibleContexts
                      , DataKinds
                      , MonoLocalBinds
                      , LambdaCase
                      , DeriveFunctor
+                     , GeneralizedNewtypeDeriving
 
 
 executable scheme-interpreter-exe
   hs-source-dirs:      app
   main-is:             Main.hs
-  other-modules:       REPL
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -Wno-unused-do-bind
   build-depends:       base, mtl
                      , scheme-interpreter
-                     , from-sum >= 0.2.1.0
-                     , containers >= 0.6.0.1
-                     , transformers >= 0.5.6.2
-                     , freer >= 0.2.4.1
   default-language:    Haskell2010
-  extensions:          FlexibleContexts
+  default-extensions:          FlexibleContexts, 
+                       LambdaCase
 
 
 test-suite scheme-interpreter-test
